@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Knowledge Base — Chat With Your Documents
 
-## Getting Started
+A full-stack SaaS where authenticated users upload documents, and a
+streaming chat answers questions from those documents using RAG
+(retrieval-augmented generation) with inline citations.
 
-First, run the development server:
+## Features
+- Email/password auth (Better Auth), every piece of data owned by a user
+- Upload .txt, .md, and .pdf documents; automatic text extraction
+- Chunking + embedding pipeline storing vectors in pgvector
+- Semantic search over the user's own documents (cosine similarity)
+- Streaming RAG chat with source citations
+- Agentic tool calling (search, list documents, save notes)
+- Conversation history with a sidebar
+- Per-user usage tracking, rate limiting, and cost guards
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tech Stack
+Next.js (App Router, TypeScript), Vercel AI SDK 5, Postgres + pgvector
+(Neon), Drizzle ORM, Better Auth, Upstash rate limiting, Tailwind +
+shadcn/ui.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How RAG Works Here
+1. On upload, text is extracted, split into ~1000-char overlapping chunks.
+2. Each chunk is embedded with OpenAI text-embedding-3-small (1536 dims)
+   and stored in the `chunks.embedding` vector column.
+3. On each question, the query is embedded with the same model, and a
+   cosine-similarity search returns the top-k most relevant chunks scoped
+   to the user's documents.
+4. Those chunks are injected into the prompt with source labels, and the
+   model streams a cited answer.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database Schema
+Briefly describe: user/session (Better Auth), documents, chunks (with
+vector column + HNSW index), conversations, messages, usage.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
+1. `npm install`
+2. Copy `.env.example` to `.env.local` and fill in the values.
+3. Enable pgvector: run `CREATE EXTENSION IF NOT EXISTS vector;`
+4. `npx drizzle-kit push` (or `migrate` for production)
+5. `npm run dev`
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Environment Variables
+List each one and what it's for (DATABASE_URL, AI_GATEWAY_API_KEY,
+BETTER_AUTH_SECRET, BETTER_AUTH_URL, UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN).

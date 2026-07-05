@@ -2,7 +2,7 @@ import { embed } from "ai";
 import { db } from "@/db";
 import { chunks, documents } from "@/db/schema";
 import { cosineDistance, sql, eq, and, gt } from "drizzle-orm";
-import { google } from "@ai-sdk/google"; // 1. Import the Google provider
+import { google } from "@ai-sdk/google";
 
 export type RetrievedChunk = {
   id: string;
@@ -18,6 +18,9 @@ export async function retrieveChunks(
   userId: string,
   topK = 5
 ): Promise<RetrievedChunk[]> {
+  // Step 7: Enforce a hard maximum/minimum ceiling on chunks retrieved
+  const safeTopK = Math.min(Math.max(topK, 1), 10); // never below 1, never above 10
+
   // Step 1: Embed query (MUST match the ingestion model exactly)
   const { embedding } = await embed({
     model: google.textEmbeddingModel("gemini-embedding-001"),
@@ -48,11 +51,11 @@ export async function retrieveChunks(
     .where(
       and(
         eq(documents.userId, userId),
-        gt(similarity, 0.2) // Now this filter will actually catch valid matches!
+        gt(similarity, 0.2) // Filter out weak matches
       )
     )
     .orderBy(distance)
-    .limit(topK);
+    .limit(safeTopK); // Using the clamped safeTopK guard here
 
   return results;
 }

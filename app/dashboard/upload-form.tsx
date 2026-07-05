@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { uploadDocument } from "@/app/actions/documents";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Loader2, Upload } from "lucide-react";
 
 export function UploadForm() {
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
@@ -18,7 +19,7 @@ export function UploadForm() {
     const formData = new FormData(e.currentTarget);
     try {
       await uploadDocument(formData);
-      formRef.current?.reset(); // clear the file input on success
+      formRef.current?.reset();
       setStatus("idle");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -27,18 +28,35 @@ export function UploadForm() {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-3">
-      <Input
-        type="file"
-        name="file"
-        accept=".txt,.md,.pdf"
-        required
-        disabled={status === "uploading"}
-      />
-      <Button type="submit" disabled={status === "uploading"}>
-        {status === "uploading" ? "Uploading…" : "Upload document"}
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid w-full items-center gap-1.5">
+        <Input
+          type="file"
+          name="file"
+          accept=".txt,.md,.pdf"
+          required
+          disabled={status === "uploading"}
+          className="cursor-pointer file:font-medium file:text-muted-foreground"
+        />
+      </div>
+      <Button type="submit" disabled={status === "uploading"} className="w-full">
+        {status === "uploading" ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing document...
+          </>
+        ) : (
+          <>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload file
+          </>
+        )}
       </Button>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md font-medium">
+          {error}
+        </div>
+      )}
     </form>
   );
 }
