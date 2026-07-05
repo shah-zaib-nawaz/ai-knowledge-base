@@ -6,6 +6,7 @@ import { conversations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { loadMessages } from "@/lib/chat-store";
 import { ChatUI } from "./chat-ui";
+import { Sidebar } from "./sidebar";
 
 export default async function ChatPage(props: {
   params: Promise<{ id: string }>;
@@ -14,15 +15,20 @@ export default async function ChatPage(props: {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/sign-in");
 
-  // Verify this conversation belongs to the current user
   const [conv] = await db
     .select()
     .from(conversations)
     .where(and(eq(conversations.id, id), eq(conversations.userId, session.user.id)));
-
   if (!conv) redirect("/dashboard");
 
   const initialMessages = await loadMessages(id);
 
-  return <ChatUI conversationId={id} initialMessages={initialMessages} />;
+  return (
+    <div className="flex">
+      <Sidebar userId={session.user.id} activeId={id} />
+      <div className="flex-1">
+        <ChatUI conversationId={id} initialMessages={initialMessages} />
+      </div>
+    </div>
+  );
 }
