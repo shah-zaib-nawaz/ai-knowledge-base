@@ -2,21 +2,29 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "./sign-out-button";
+import { UploadForm } from "./upload-form";
+import { DocumentList } from "./document-list";
 
 export default async function DashboardPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    redirect("/sign-in");
-  }
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/sign-in");
 
   return (
-    <div className="max-w-2xl mx-auto py-24 space-y-4">
-      <h1 className="text-2xl font-bold">Welcome, {session.user.name}</h1>
-      <p className="text-muted-foreground">This is your knowledge base. Only you can see this.</p>
-      <SignOutButton />
+    <div className="max-w-2xl mx-auto py-16 space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Your Knowledge Base</h1>
+        <SignOutButton />
+      </div>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Upload a document</h2>
+        <UploadForm />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Your documents</h2>
+        <DocumentList userId={session.user.id} />
+      </section>
     </div>
   );
 }
